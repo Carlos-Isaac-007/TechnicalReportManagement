@@ -1,0 +1,61 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          Int          @id @default(autoincrement())
+  name        String
+  email       String       @unique
+  password    String
+  roleId      Int
+  role        Role         @relation(fields: [roleId], references: [id])
+  contacts    Contact[]
+  technician  Technician?
+  admin       Admin?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+model Role {
+  id          Int          @id @default(autoincrement())
+  name        String       @unique
+  description String?
+  users       User[]
+}
+
+model Contact {
+  id        Int       @id @default(autoincrement())
+  userId    Int
+  phone     String
+  type      String?
+  user      User      @relation(fields: [userId], references: [id])
+}
+
+model Technician {
+  id                Int             @id @default(autoincrement())
+  userId            Int             @unique
+  specializationId  Int
+  active            Boolean         @default(true)
+  hireDate          DateTime        @default(now())
+  user              User            @relation(fields: [userId], references: [id])
+  specialization    Specialization  @relation(fields: [specializationId], references: [id])
+}
+
+model Specialization {
+  id            Int           @id @default(autoincrement())
+  name          String        @unique
+  description   String?
+  technicians   Technician[]
+}
+
+model Admin {
+  id      Int    @id @default(autoincrement())
+  userId  Int    @unique
+  level   Int
+  user    User   @relation(fields: [userId], references: [id])
+}
