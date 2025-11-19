@@ -14,6 +14,7 @@ interface CreateTechnicianInput {
   password: string;
   contacts?: ContactInput[];
   specialization: string;
+  role?: string;
 }
 
 export async function createTechnician(data: CreateTechnicianInput) {
@@ -34,7 +35,7 @@ export async function createTechnician(data: CreateTechnicianInput) {
 
   // 3️⃣ Cria o usuário base (com role de técnico)
   const hashedPassword = await bcrypt.hash(password, 10);
-  const role = await prisma.role.findFirst({ where: { name: "Technician" } });
+  const role = await prisma.role.findFirst({ where: { name: data.role || "Technician" } });
 
   if (!role) throw new Error("Role 'Technician' não encontrada. Insira na tabela Role.");
 

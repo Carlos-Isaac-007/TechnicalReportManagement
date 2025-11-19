@@ -3,6 +3,8 @@ import cors from "cors";
 import dotenv from "dotenv";
 import reportRoutes from "./routes/report.routes";
 import technicianRoutes from "./routes/technician.routes";
+import authRoutes from "./routes/auth.routes"
+import { auth } from "./middleware/auth";
 
 dotenv.config();
 
@@ -18,6 +20,7 @@ app.get("/", (req: Request, res: Response) => {
 // rota de relatórios
 app.use("/api/reports", reportRoutes);
 app.use("/api/technicians", technicianRoutes);
+app.use("/api/login", authRoutes);
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => console.log(`Servidor rodando na porta ${PORT}`));

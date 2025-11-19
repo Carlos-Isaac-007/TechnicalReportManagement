@@ -1,31 +1,55 @@
-import { useState } from 'react';
-import { Button } from './ui/button';
-import { Input } from './ui/input';
-import { Label } from './ui/label';
+import { useState } from "react";
+import axios from "axios";
+import { Button } from "./ui/button";
+import { Input } from "./ui/input";
+import { Label } from "./ui/label";
+import { ImageWithFallback } from "./ImageWithFallback";
 
 interface LoginProps {
-  onLogin: () => void;
+  onLogin: (user: any) => void;
 }
 
 export default function Login({ onLogin }: LoginProps) {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Simple validation for demo purposes
-    if (username && password) {
-      onLogin();
+    setLoading(true);
+    setError("");
+
+    try {
+      const response = await axios.post("http://localhost:3001/api/login", {
+        email: email,
+        password: password,
+      });
+
+      const { token, user } = response.data;
+
+      // Guarda o token no localStorage
+      localStorage.setItem("token", token);
+
+      // Devolve o user autenticado para o App
+      onLogin(user);
+    } catch (err: any) {
+      setError(
+        err.response?.data?.message ||
+          "Falha ao iniciar sessão. Verifique as credenciais."
+      );
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#0057D9] to-[#003A8C]">
       <div className="bg-white rounded-lg shadow-2xl p-10 w-full max-w-md">
-        {/* Company Logo */}
+        {/* Logo */}
         <div className="flex flex-col items-center mb-8">
-          <div className="w-20 h-20 bg-[#0057D9] rounded-full flex items-center justify-center mb-4">
-            <span className="text-white text-3xl">CM</span>
+          <div className="w-20 h-20 rounded-full flex items-center justify-center mb-4">
+            <ImageWithFallback src="/logo.png" />
           </div>
           <h1 className="text-center text-[#2B2B2B] mb-2">
             Sistema de Gestão de Relatórios Técnicos
@@ -33,16 +57,16 @@ export default function Login({ onLogin }: LoginProps) {
           <p className="text-sm text-gray-500">CM Reports</p>
         </div>
 
-        {/* Login Form */}
+        {/* FORM */}
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-2">
             <Label htmlFor="username">Nome de Utilizador</Label>
             <Input
               id="username"
-              type="text"
-              placeholder="Insira o seu nome de utilizador"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              type="email"
+              placeholder="Insira o seu email de utilizador"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               className="w-full"
               required
             />
@@ -61,11 +85,14 @@ export default function Login({ onLogin }: LoginProps) {
             />
           </div>
 
-          <Button 
-            type="submit" 
+          {error && <p className="text-red-500 text-sm text-center">{error}</p>}
+
+          <Button
+            type="submit"
+            disabled={loading}
             className="w-full bg-[#0057D9] hover:bg-[#003A8C] text-white transition-colors"
           >
-            Entrar
+            {loading ? "A entrar..." : "Entrar"}
           </Button>
         </form>
 

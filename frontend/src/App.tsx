@@ -1,4 +1,4 @@
-"use cliente"
+"use client"
 import { useState } from 'react';
 import Login from './components/Login';
 import Dashboard from './components/Dashboard';
@@ -24,8 +24,16 @@ export interface Technician {
   contact: string;
 }
 
+// 🆕 Interface para o usuário logado
+export interface User {
+  id: number;
+  name: string;
+  email: string;
+  role: string; // 'admin' ou 'technician'
+}
+
 function App() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [user, setUser] = useState<User | null>(null); // 🆕 Agora guardamos o user completo
   const [currentPage, setCurrentPage] = useState<'home' | 'reports' | 'technicians' | 'statistics' | 'settings'>('home');
   
   const [reports, setReports] = useState<Report[]>([
@@ -98,13 +106,15 @@ function App() {
     }
   ]);
 
-  const handleLogin = () => {
-    setIsLoggedIn(true);
+  // 🆕 Agora recebemos o user completo do Login
+  const handleLogin = (userData: User) => {
+    setUser(userData);
   };
 
   const handleLogout = () => {
-    setIsLoggedIn(false);
+    setUser(null);
     setCurrentPage('home');
+    localStorage.removeItem('token'); // 🆕 Limpa o token
   };
 
   const addReport = (report: Report) => {
@@ -123,41 +133,110 @@ function App() {
     setTechnicians([...technicians, technician]);
   };
 
+  // 🆕 Verifica se está logado
+  const isLoggedIn = !!user;
+
   if (!isLoggedIn) {
     return <Login onLogin={handleLogin} />;
   }
 
+  // 🆕 Função para determinar se mostra uma página baseado no role
+  const shouldShowPage = (page: string): boolean => {
+    switch (page) {
+      case 'reports':
+        // Reports: technicians e admin
+        return user.role === 'technician' || user.role === 'admin';
+      
+      case 'technicians':
+        // Technicians: apenas admin
+        return user.role === 'admin';
+      
+      case 'home':
+      case 'statistics':
+      case 'settings':
+        // Todas as outras páginas: todos os roles
+        return true;
+      
+      default:
+        return false;
+    }
+  };
+
+  // 🆕 Renderização condicional baseada no role
+  const renderCurrentPage = () => {
+    if (!shouldShowPage(currentPage)) {
+      return (
+        <div className="flex flex-col items-center justify-center h-64">
+          <div className="text-6xl mb-4">🔒</div>
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">Acesso Restrito</h2>
+          <p className="text-gray-600 text-center">
+            Não tens permissões para aceder a esta página.<br />
+            Contacta o administrador do sistema.
+          </p>
+        </div>
+      );
+    }
+
+    switch (currentPage) {
+      case 'home':
+        return <Dashboard reports={reports} technicians={technicians} />;
+      
+      case 'reports':
+        return (
+          <ReportManagement 
+            reports={reports} 
+            technicians={technicians}
+            onAddReport={addReport}
+            onUpdateReport={updateReport}
+            onDeleteReport={deleteReport}
+            currentUser={user} // 🆕 Passa info do user atual
+          />
+        );
+      
+      case 'technicians':
+        return user.role === 'admin' ? ( // 🆕 Dupla verificação
+          <TechnicianManagement 
+            technicians={technicians}
+            onAddTechnician={addTechnician}
+          />
+        ) : null;
+      
+      case 'statistics':
+        return <Dashboard reports={reports} technicians={technicians} />;
+      
+      case 'settings':
+        return <SettingsPage user={user} />; // 🆕 Podes passar user para settings
+      
+      default:
+        return <Dashboard reports={reports} technicians={technicians} />;
+    }
+  };
+
   return (
     <div className="flex h-screen bg-[#F5F5F5]">
-      <Sidebar currentPage={currentPage} setCurrentPage={setCurrentPage} onLogout={handleLogout} />
+      {/* 🆕 Passa o user para o Sidebar para controlar visibilidade de items */}
+      <Sidebar 
+        currentPage={currentPage} 
+        setCurrentPage={setCurrentPage} 
+        onLogout={handleLogout}
+        userRole={user.role} // 🆕 Importante!
+      />
       
       <div className="flex-1 flex flex-col overflow-hidden">
-        <Header />
+        {/* 🆕 Passa info do user para o Header */}
+        <Header user={user} />
         
         <main className="flex-1 overflow-y-auto p-8">
-          {currentPage === 'home' && <Dashboard reports={reports} technicians={technicians} />}
-          {currentPage === 'reports' && (
-            <ReportManagement 
-              reports={reports} 
-              technicians={technicians}
-              onAddReport={addReport}
-              onUpdateReport={updateReport}
-              onDeleteReport={deleteReport}
-            />
-          )}
-          {currentPage === 'technicians' && (
-            <TechnicianManagement 
-              technicians={technicians}
-              onAddTechnician={addTechnician}
-            />
-          )}
-          {currentPage === 'statistics' && <Dashboard reports={reports} technicians={technicians} />}
-          {currentPage === 'settings' && <SettingsPage />}
+          {renderCurrentPage()}
         </main>
 
         <footer className="bg-white border-t border-gray-200 py-4 px-8">
           <p className="text-center text-sm text-[#2B2B2B]">
             © 2025 Carlos Mateus Comércio e Serviços, Lda – Sistema de Gestão de Relatórios Técnicos
+          </p>
+          {/* 🆕 Mostra role atual */}
+          <p className="text-center text-xs text-gray-500 mt-1">
+            Logado como: <span className="font-medium">{user.name}</span> ({user.role})
           </p>
         </footer>
       </div>

@@ -3,7 +3,7 @@ import { createTechnician } from "../services/technician.service";
 
 export const addTechnician = async (req: Request, res: Response) => {
   try {
-    const { name, email, password, phone, specialization } = req.body;
+    const { name, email, password, phone, specialization, role } = req.body;
 
     // adapta o dado único em array
     const contacts = phone
@@ -16,6 +16,7 @@ export const addTechnician = async (req: Request, res: Response) => {
       password,
       contacts,
       specialization,
+      role,
     });
 
     return res.status(201).json(newTech);
